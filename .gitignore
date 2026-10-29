@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv_py311/
+*.npy
+
+# PyCharm
+.idea/
+
+# 模型权重和日志
+checkpoints_7d/
+*.pth
+*.log
+
+# 生成的图表和数据
+paper_assets/
+data/
+fig/

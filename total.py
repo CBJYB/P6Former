@@ -1,8 +1,3 @@
-"""
-生成论文所需的所有表格和图表（Neurocomputing 终稿高级美化版 v17）。
-仅修复了图 5(a) 中 0.97 标签与 TXx 重叠的问题。
-运行：python total.py
-"""
 import os
 import csv
 import shutil
@@ -30,7 +25,7 @@ try:
 except ImportError:
     HAS_CARTOPY = False
 
-# ================= 全局绘图风格设置 =================
+#全局绘图风格设置
 matplotlib.rcParams.update({
     'font.size': 14, 'axes.titlesize': 16, 'axes.labelsize': 15,
     'xtick.labelsize': 13, 'ytick.labelsize': 13, 'legend.fontsize': 12,
@@ -50,14 +45,14 @@ INDEX_NAMES = ['TXx', 'TNn', 'CDD', 'CWD', 'R95p', 'SDII']
 SEEDS = [42, 123, 2024]
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# 丰富的高级配色方案
+
 COLORS = {
     'Full': '#00B4D8', 'w/o Physics': '#F72585', 'w/o Aug': '#F4A261', 'Baseline': '#E63946',
 }
 CONSTRAINT_COLORS = ['#FF595E', '#FFCA3A', '#8AC926', '#1982C4', '#6A4C93', '#FF924C']
 
 
-# 辅助函数：将 Python 的 3.1e+04 转为数学格式的 3.1 × 10^4
+# 辅助函数
 def format_sci(val):
     if val == 0:
         return "0.0"
@@ -157,7 +152,7 @@ if os.path.exists(model_path):
 else:
     real_true_avg = real_pred_avg = real_true_maps = real_pred_maps = None
 
-# ---- 图 2：研究区域 ----
+#图 2-
 if HAS_CARTOPY:
     try:
         fig = plt.figure(figsize=(10, 8));
@@ -196,7 +191,7 @@ if HAS_CARTOPY:
     except Exception as e:
         print(f"⚠️ Cartopy 渲染失败: {e}")
 
-# ---- 图 3：散点图 (3 行 2 列竖排) ----
+#图 3
 if real_true_avg is not None:
     fig, axes = plt.subplots(3, 2, figsize=(12, 16));
     axes = axes.flatten()
@@ -218,7 +213,7 @@ if real_true_avg is not None:
     plt.savefig(os.path.join(OUTPUT_DIR, "fig3_pred_vs_true.png"), dpi=300, bbox_inches='tight');
     plt.close()
 
-# ---- 图 4：物理残差 ----
+#图 4
 if os.path.exists(res_src):
     df_res = pd.read_csv(res_src)
     labels_r = ['Continuity', 'Thermodynamics', 'Momentum', 'Energy', 'Phase', 'Covariance']
@@ -260,7 +255,7 @@ if os.path.exists(res_src):
     plt.savefig(os.path.join(OUTPUT_DIR, "fig4_residuals.png"), dpi=300, bbox_inches='tight');
     plt.close()
 
-    # ---- 图 5(a)：消融实验雷达图 (补全完整的同心圆虚线网格) ----
+    #图 5(a)
     if df_eval is not None:
         def get_per_idx(cfg):
             sub = df_eval[df_eval['Config'].str.endswith(cfg)]
@@ -279,7 +274,6 @@ if os.path.exists(res_src):
         fig, ax = plt.subplots(figsize=(14, 14), subplot_kw=dict(polar=True))
         ax.set_facecolor('#FFFFFF')
 
-        # 🔧 核心修复 1：统一成极其清晰的浅灰虚线，线宽调细
         ax.xaxis.grid(color='#BDBDBD', linestyle='--', linewidth=1.2, alpha=1.0, zorder=1)
         ax.yaxis.grid(color='#BDBDBD', linestyle='--', linewidth=1.2, alpha=1.0, zorder=1)
 
@@ -288,7 +282,6 @@ if os.path.exists(res_src):
             return data.tolist() + [data[0]]
 
 
-        # 数据线画在网格线之上
         ax.plot(angles, close_data(baseline_per), linewidth=3, linestyle='-.', label='Baseline',
                 color=COLORS['Baseline'], marker='D', markersize=8, alpha=0.9, zorder=3)
         ax.plot(angles, close_data(noaug_per), linewidth=3, linestyle='--', label='w/o Augmentation',
@@ -302,14 +295,11 @@ if os.path.exists(res_src):
         ax.set_xticklabels(labels_radar, fontsize=22, fontweight='bold')
         ax.tick_params(axis='x', pad=25)
 
-        # 🔧 核心修复 2：必须设置 yticks 才能画出完整的同心圆网格
         ax.set_ylim(0, 1.15)
         ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
 
-        # 把系统自带的刻度文字隐藏，只留网格线
         ax.set_yticklabels([])
 
-        # 手动把刻度文字写到 45 度角方向
         manual_ticks = [0.2, 0.4, 0.6, 0.8, 1.0]
         text_angle = np.pi / 4
         for tick_val in manual_ticks:
@@ -333,7 +323,7 @@ if os.path.exists(res_src):
         plt.savefig(os.path.join(OUTPUT_DIR, "fig5a_ablation_radar.png"), dpi=300, bbox_inches='tight');
         plt.close()
 
-    # ---- 图 5(b)：极坐标玫瑰图 ----
+    #图 5(b)
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_subplot(111, polar=True)
 
@@ -376,7 +366,7 @@ if os.path.exists(res_src):
     plt.savefig(os.path.join(OUTPUT_DIR, "fig5b_ablation_avg_r2.png"), dpi=300, bbox_inches='tight');
     plt.close()
 
-# ---- 图 6：空间分布对比 ----
+#图 6
 if real_true_maps is not None:
     sample_idx = 0
     fig, axes = plt.subplots(3, 3, figsize=(15, 14), gridspec_kw={'hspace': 0.2, 'wspace': 0.2})
@@ -415,7 +405,7 @@ if real_true_maps is not None:
     plt.savefig(os.path.join(OUTPUT_DIR, "fig6_spatial_distribution.png"), dpi=300, bbox_inches='tight');
     plt.close()
 
-# ---- 图 7：分布漂移 (3 行 2 列竖排) ----
+#图 7
 try:
     y_train = np.load(os.path.join(DATA_DIR, "y_train.npy")).mean(axis=(2, 3))
     y_val = np.load(os.path.join(DATA_DIR, "y_val.npy")).mean(axis=(2, 3))
@@ -442,7 +432,7 @@ try:
 except Exception as e:
     print(f"⚠️ 绘制图7失败: {e}")
 
-# ---- 图 8：R95p 分层误差 ----
+#图 8
 if real_true_maps is not None:
     r95p_true, r95p_pred = real_true_maps[:, 4, :, :], real_pred_maps[:, 4, :, :]
     r95p_true_avg = r95p_true.mean(axis=(1, 2))

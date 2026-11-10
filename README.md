@@ -27,9 +27,8 @@ pip install -r requirements.txt
 Due to the large size of the datasets, we do not provide the raw data in this repository. Please download the CMFD and ETCCDI indices independently.
 
 1. Downloading CMFD Data
-The China Meteorological Forcing Dataset (CMFD) used in this study is Version 2.0 (1951–2024). It can be downloaded from the National Tibetan Plateau Data Center (TPDC):
-
-Download Link: https://www.tpdc.ac.cn/zh-hans/data/e60dfd96-5fd8-493f-beae-e8e5d24dece4
+The China Meteorological Forcing Dataset (CMFD) used in this study is Version 2.0 (1951–2024). It can be downloaded from the National Tibetan Plateau Data Center (TPDC).
+The dataset download link is provided in our paper.
 
 2. Preprocessing Scripts
 We provide the data processing scripts in the preprocessing/ directory. The pipeline is as follows:
@@ -92,11 +91,6 @@ All generated figures and tables will be saved in the paper_assets/ directory.
   Citation
 If you find this code useful for your research, please consider citing our paper:
 (Citation details will be updated upon publication)
-
-Data Citation
-CMFD v2.0:
-
-He, J., Yang, K., Li, X., Tang, W., Shao, C., Jiang, Y., & Ding, B. (2024). China meteorological forcing dataset v2.0 (1951-2024). National Tibetan Plateau / Third Pole Environment Data Center. https://doi.org/10.11888/Atmos.tpdc.302088
 
   Contact
 For any questions or issues, please open an issue in this repository or contact the authors.

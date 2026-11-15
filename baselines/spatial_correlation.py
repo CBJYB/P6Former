@@ -38,7 +38,7 @@ def spatial_correlation(pred, true):
     return np.array([np.mean(c) if c else 0.0 for c in corr_list])
 
 
-# P6Former 评估
+# P6Former evaluation
 print("\n🔍 P6Former...")
 test_dataset = P6FormerDataset(x_file=os.path.join(DATA_DIR, "X_test.npy"), y_file=os.path.join(DATA_DIR, "y_test.npy"), indices_names=INDICES_NAMES, target_spatial=SPATIAL_SIZE, augment=False)
 test_loader = DataLoader(test_dataset, batch_size=8, shuffle=False, num_workers=0)
@@ -67,8 +67,8 @@ if os.path.exists(model_path) and os.path.exists(summary_path):
     corr_p6 = spatial_correlation(pred_p6, y_test)
     print(f"   Spatial correlation: {corr_p6.round(4)}")
 else:
-    print("❌ 未找到 P6Former 模型或 summary.npy")
+    print("❌ P6Former model or summary.npy not found")
     corr_p6 = np.zeros(6)
 
-# ConvLSTM 评估
+# ConvLSTM evaluation
 print("\n🔍 ConvLSTM...")

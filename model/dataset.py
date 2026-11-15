@@ -4,14 +4,14 @@ import numpy as np
 
 class P6FormerDataset(Dataset):
     def __init__(self, x_file, y_file, indices_names, target_spatial=(80, 140), time_steps=30, variables=8, augment=False):
-        print(f"📦 加载 {x_file}...")
+        print(f"📦 Loading {x_file}...")
         self.X = np.load(x_file, mmap_mode='r')
         self.y = np.load(y_file)
         if self.X.shape[3] > time_steps:
             self.X = self.X[:, :, :, -time_steps:, :]
         self.time_steps = time_steps; self.variables = variables; self.indices_names = indices_names
         self.augment = augment; self.target_spatial = target_spatial
-        print(f"   ✅ 数据集加载完成: X {self.X.shape}, y {self.y.shape}")
+        print(f"   ✅ Dataset loaded: X {self.X.shape}, y {self.y.shape}")
 
     def __len__(self): return len(self.X)
 

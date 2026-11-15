@@ -49,12 +49,12 @@ class P6Former(nn.Module):
         H, W = spatial_size
         self.H, self.W = H, W
 
-        #  空间编码
+        #  Spatial encoding
         self.spatial_encoder = SpatialEncoder(in_vars)
         self.flatten_dim = self.spatial_encoder.out_dim
         self.input_proj = nn.Linear(self.flatten_dim, d_model)
 
-        # 时间编码
+        # Temporal encoding
         self.pos_encoder = PositionalEncoding(d_model, max_len=time_steps)
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model, nhead=n_heads, dim_feedforward=d_ff,
@@ -62,7 +62,7 @@ class P6Former(nn.Module):
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
-        # 主输出头：全连接出 8x8，再用反卷积放大
+        # Main output head: fully connected to 8x8, then upsampled by deconvolution
         self.fc_main = nn.Sequential(
             nn.Linear(d_model, 256),
             nn.ReLU(),
@@ -78,7 +78,7 @@ class P6Former(nn.Module):
             nn.Upsample(size=(self.H, self.W), mode='bilinear', align_corners=False)  # 64x64 -> 80x140
         )
 
-        #辅助输出头
+        # Auxiliary output head
         self.decoder = nn.Sequential(
             nn.Linear(d_model, 512),
             nn.ReLU(),
@@ -107,11 +107,11 @@ class P6Former(nn.Module):
 
         global_feat = encoded.mean(dim=1)
 
-        # 主输出：全连接 -> 反卷积
+        # Main output: fully connected -> deconvolution
         main_low = self.fc_main(global_feat).view(B, self.num_indices, 8, 8)
         main_out = self.deconv_main(main_low)
 
-        # 辅助输出：全连接 -> 反卷积
+
         aux_low = self.decoder(global_feat).view(B, self.in_vars, 8, 8)
         aux_out = self.deconv_aux(aux_low)
 

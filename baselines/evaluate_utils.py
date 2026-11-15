@@ -6,9 +6,9 @@ INDICES_NAMES = ['txx', 'tnn', 'cdd', 'cwd', 'r95p', 'sdii']
 def compute_metrics(pred, true, name=""):
     """
     pred, true: (N, 6, H, W)
-    返回每个指数的 RMSE, MAE, R²
+    Returns RMSE, MAE, R² for each index
     """
-    # 空间平均
+    # Spatial average
     pred_avg = pred.mean(axis=(2, 3))  # (N, 6)
     true_avg = true.mean(axis=(2, 3))  # (N, 6)
 

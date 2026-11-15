@@ -1,19 +1,27 @@
-# Python
 __pycache__/
 *.py[cod]
+*$py.class
 .venv/
 venv_py311/
-*.npy
-
-# PyCharm
+venv/
+env/
 .idea/
-
-# 模型权重和日志
+.vscode/
+*.swp
+*.swo
+.DS_Store
 checkpoints_7d/
+checkpoints_dummy/
 *.pth
-*.log
-
-# 生成的图表和数据
+*.npy
+*.npy.gz
+data/split_7d/
+data/*.py
+!data/dummy/
+!data/dummy/*.npy
 paper_assets/
-data/
-fig/
+*.csv
+*.png
+*.pdf
+*.log
+check_physics.py

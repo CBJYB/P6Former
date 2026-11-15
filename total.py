@@ -25,7 +25,6 @@ try:
 except ImportError:
     HAS_CARTOPY = False
 
-#全局绘图风格设置
 matplotlib.rcParams.update({
     'font.size': 14, 'axes.titlesize': 16, 'axes.labelsize': 15,
     'xtick.labelsize': 13, 'ytick.labelsize': 13, 'legend.fontsize': 12,
@@ -45,28 +44,25 @@ INDEX_NAMES = ['TXx', 'TNn', 'CDD', 'CWD', 'R95p', 'SDII']
 SEEDS = [42, 123, 2024]
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
 COLORS = {
     'Full': '#00B4D8', 'w/o Physics': '#F72585', 'w/o Aug': '#F4A261', 'Baseline': '#E63946',
 }
 CONSTRAINT_COLORS = ['#FF595E', '#FFCA3A', '#8AC926', '#1982C4', '#6A4C93', '#FF924C']
 
 
-# 辅助函数
 def format_sci(val):
     if val == 0:
-        return "0.0"
+        return "0"
     s = f"{val:.1e}"
     base, exp = s.split('e')
     exp = int(exp)
+    if exp == 0:
+        return base
     return f"${base} \\times 10^{{{exp}}}$"
 
 
-# ============================================================
-# 0. 辅助工具
-# ============================================================
 def run_real_inference(model_path):
-    print(f"  ⏳ 加载模型进行真实推理: {os.path.basename(os.path.dirname(model_path))}")
+    print(f"  Loading model for inference: {os.path.basename(os.path.dirname(model_path))}")
     test_ds = P6FormerDataset(
         x_file=os.path.join(DATA_DIR, "X_test.npy"),
         y_file=os.path.join(DATA_DIR, "y_test.npy"),
@@ -102,10 +98,7 @@ def run_real_inference(model_path):
     return true_maps.mean(axis=(2, 3)), pred_maps.mean(axis=(2, 3)), true_maps, pred_maps
 
 
-# ============================================================
-# 1. 加载动态数据
-# ============================================================
-print("=" * 70 + "\n加载动态数据...\n" + "=" * 70)
+print("=" * 70 + "\nLoading data...\n" + "=" * 70)
 
 csv_path = os.path.join(OUTPUT_DIR, "p6former_full_eval.csv")
 if os.path.exists(csv_path):
@@ -123,12 +116,9 @@ if os.path.exists(csv_path):
     noaug_mean, noaug_std = get_agg_r2('_noaug')
     baseline_mean, baseline_std = get_agg_r2('_baseline')
 else:
-    print("⚠️ 找不到 p6former_full_eval.csv")
+    print("Cannot find p6former_full_eval.csv")
     df_eval = None
 
-# ============================================================
-# 2. 生成表格数据
-# ============================================================
 res_src = os.path.join(OUTPUT_DIR, "table_physics_satisfaction.csv")
 if os.path.exists(res_src):
     shutil.copy(res_src, os.path.join(OUTPUT_DIR, "table_residuals_export.csv"))
@@ -141,10 +131,7 @@ if df_eval is not None:
     }
     pd.DataFrame(ablation_r2_data).to_csv(os.path.join(OUTPUT_DIR, "table_ablation_export.csv"), index=False)
 
-# ============================================================
-# 3. 生成图表
-# ============================================================
-print("\n" + "=" * 70 + "\n生成图表...\n" + "=" * 70)
+print("\n" + "=" * 70 + "\nGenerating figures...\n" + "=" * 70)
 
 model_path = os.path.join(CKPT_DIR, "lam1e-1_seed42", "best_model.pth")
 if os.path.exists(model_path):
@@ -152,7 +139,6 @@ if os.path.exists(model_path):
 else:
     real_true_avg = real_pred_avg = real_true_maps = real_pred_maps = None
 
-#图 2-
 if HAS_CARTOPY:
     try:
         fig = plt.figure(figsize=(10, 8));
@@ -164,20 +150,24 @@ if HAS_CARTOPY:
         ax.add_feature(cfeature.LAKES, facecolor='lightblue', edgecolor='royalblue', alpha=0.5)
         ax.add_feature(cfeature.BORDERS, linestyle=':', linewidth=1, color='gray');
         ax.add_feature(cfeature.COASTLINE, linewidth=1, color='black')
-        rect = Rectangle((80, 25), 25, 15, fill=False, edgecolor='red', linewidth=2, linestyle='--');
+        rect = Rectangle((80, 25), 25, 15, fill=False, edgecolor='red', linewidth=2.5, linestyle='--');
         ax.add_patch(rect)
 
         cities = {'Lhasa': (91.1, 29.6), 'Nagqu': (92.0, 31.4), 'Golmud': (94.9, 36.4), 'Xining': (101.8, 36.6),
                   'Shigatse': (88.8, 29.2), 'Hotan': (79.9, 37.1)}
         for name, (lon, lat) in cities.items():
-            ax.plot(lon, lat, 'ro', markersize=6, transform=ccrs.PlateCarree())
+            ax.plot(lon, lat, 'ro', markersize=13, transform=ccrs.PlateCarree())
             if name == 'Shigatse':
-                ax.text(lon - 0.2, lat - 0.8, name, fontsize=9, fontweight='bold', transform=ccrs.PlateCarree(),
+                ax.text(lon - 0.5, lat - 0.8, name, fontsize=13, fontweight='bold', transform=ccrs.PlateCarree(),
                         ha='center')
             elif name == 'Lhasa':
-                ax.text(lon + 0.5, lat + 0.3, name, fontsize=9, fontweight='bold', transform=ccrs.PlateCarree())
+                ax.text(lon + 0.6, lat + 0.4, name, fontsize=13, fontweight='bold', transform=ccrs.PlateCarree())
+            elif name == 'Hotan':
+                ax.text(lon + 0.6, lat + 0.2, name, fontsize=13, fontweight='bold', transform=ccrs.PlateCarree())
+            elif name == 'Xining':
+                ax.text(lon - 0.5, lat + 0.5, name, fontsize=13, fontweight='bold', transform=ccrs.PlateCarree())
             else:
-                ax.text(lon + 0.5, lat + 0.3, name, fontsize=9, fontweight='bold', transform=ccrs.PlateCarree())
+                ax.text(lon + 0.6, lat + 0.4, name, fontsize=13, fontweight='bold', transform=ccrs.PlateCarree())
 
         gl = ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False, alpha=0.4, linestyle='--',
                           color='gray')
@@ -189,9 +179,8 @@ if HAS_CARTOPY:
         plt.savefig(os.path.join(OUTPUT_DIR, "fig2_study_area.png"), dpi=300, bbox_inches='tight');
         plt.close()
     except Exception as e:
-        print(f"⚠️ Cartopy 渲染失败: {e}")
+        print(f"Cartopy render failed: {e}")
 
-#图 3
 if real_true_avg is not None:
     fig, axes = plt.subplots(3, 2, figsize=(12, 16));
     axes = axes.flatten()
@@ -199,21 +188,21 @@ if real_true_avg is not None:
     for i, idx_name in enumerate(INDEX_NAMES):
         ax = axes[i];
         t, p = real_true_avg[:, i], real_pred_avg[:, i]
-        ax.scatter(t, p, alpha=0.6, s=25, c=COLORS['Full'], edgecolor='w', linewidth=0.5)
+        ax.scatter(t, p, alpha=0.6, s=30, c=COLORS['Full'], edgecolor='w', linewidth=0.5)
         mn, mx = min(t.min(), p.min()), max(t.max(), p.max())
         ax.plot([mn, mx], [mn, mx], 'k--', linewidth=1.5)
 
-        ax.set_xlabel(f'True {idx_name}', fontsize=14)
-        ax.set_ylabel(f'Predicted {idx_name}', fontsize=14)
+        ax.set_xlabel(f'True {idx_name}', fontsize=20)
+        ax.set_ylabel(f'Predicted {idx_name}', fontsize=20)
+        ax.tick_params(axis='both', labelsize=16)
 
         r2_val = r2_score(t, p)
-        ax.text(0.05, 0.9, f'R² = {r2_val:.3f}', transform=ax.transAxes, fontsize=14, fontweight='bold')
+        ax.text(0.05, 0.9, f'R² = {r2_val:.3f}', transform=ax.transAxes, fontsize=18, fontweight='bold')
 
     plt.tight_layout();
     plt.savefig(os.path.join(OUTPUT_DIR, "fig3_pred_vs_true.png"), dpi=300, bbox_inches='tight');
     plt.close()
 
-#图 4
 if os.path.exists(res_src):
     df_res = pd.read_csv(res_src)
     labels_r = ['Continuity', 'Thermodynamics', 'Momentum', 'Energy', 'Phase', 'Covariance']
@@ -221,7 +210,7 @@ if os.path.exists(res_src):
     x = np.arange(len(labels_r))
     width = 0.35
 
-    fig, ax = plt.subplots(figsize=(11, 6))
+    fig, ax = plt.subplots(figsize=(12, 7))
 
     bars1 = ax.bar(x - width / 2, np.clip(p6_res, 1e-10, None), width, label='P⁶Former',
                    color=CONSTRAINT_COLORS, alpha=0.9, edgecolor='black', linewidth=1, zorder=3)
@@ -229,102 +218,100 @@ if os.path.exists(res_src):
                    color=CONSTRAINT_COLORS, alpha=0.5, edgecolor='black', linewidth=1, hatch='//', zorder=3)
 
     ax.set_yscale('log')
+    ax.set_xlim(-0.7, 5.7)
 
     for i in range(len(labels_r)):
         val_p6 = np.clip(p6_res[i], 1e-10, None)
-        ax.text(x[i] - width / 2 - 0.02, val_p6 * 1.5, format_sci(p6_res[i]), ha='right', va='bottom', fontsize=10,
-                fontweight='bold')
+        label_p6 = "0" if p6_res[i] == 0 else format_sci(p6_res[i])
+        ax.text(x[i] - 0.02, val_p6 * 3.0, label_p6, ha='right', va='bottom', fontsize=14)
 
         val_no = nophys_res[i]
-        ax.text(x[i] + width / 2 + 0.02, val_no * 1.5, format_sci(nophys_res[i]), ha='left', va='bottom', fontsize=10,
-                fontweight='bold', color='#444444')
+        label_no = "0" if nophys_res[i] == 0 else format_sci(nophys_res[i])
+        ax.text(x[i] + 0.02, val_no * 3.0, label_no, ha='left', va='bottom', fontsize=14, color='#444444')
 
-    ax.set_ylabel('Residual (log scale)', fontsize=15)
+    ax.set_ylabel('Residual (log scale)', fontsize=20)
     ax.set_xticks(x)
-    ax.set_xticklabels(labels_r, fontsize=13, fontweight='bold')
+    ax.set_xticklabels(labels_r, fontsize=16, fontweight='bold')
+    ax.tick_params(axis='y', labelsize=16)
     from matplotlib.patches import Patch
 
     legend_elements = [
         Patch(facecolor='gray', edgecolor='black', label='P⁶Former'),
         Patch(facecolor='lightgray', edgecolor='black', hatch='//', label='w/o Physics')
     ]
-    ax.legend(handles=legend_elements, loc='lower right', fontsize=12)
+    ax.legend(handles=legend_elements, loc='lower right', fontsize=16)
     ax.set_ylim(1e-11, 1e6)
 
     plt.tight_layout();
     plt.savefig(os.path.join(OUTPUT_DIR, "fig4_residuals.png"), dpi=300, bbox_inches='tight');
     plt.close()
 
-    #图 5(a)
-    if df_eval is not None:
-        def get_per_idx(cfg):
-            sub = df_eval[df_eval['Config'].str.endswith(cfg)]
-            if sub.empty: return [0] * 6
-            return sub[[f'{idx}_R2' for idx in INDEX_NAMES]].mean().values
+if df_eval is not None:
+    def get_per_idx(cfg):
+        sub = df_eval[df_eval['Config'].str.endswith(cfg)]
+        if sub.empty: return [0] * 6
+        return sub[[f'{idx}_R2' for idx in INDEX_NAMES]].mean().values
 
 
-        phys_per, nophys_per, noaug_per, baseline_per = get_per_idx('_phys'), get_per_idx('_nophys'), get_per_idx(
-            '_noaug'), get_per_idx('_baseline')
+    phys_per, nophys_per, noaug_per, baseline_per = get_per_idx('_phys'), get_per_idx('_nophys'), get_per_idx(
+        '_noaug'), get_per_idx('_baseline')
 
-        labels_radar = np.array(INDEX_NAMES)
-        num_vars = len(labels_radar)
-        angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-        angles += angles[:1]
+    labels_radar = np.array(INDEX_NAMES)
+    num_vars = len(labels_radar)
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    angles += angles[:1]
 
-        fig, ax = plt.subplots(figsize=(14, 14), subplot_kw=dict(polar=True))
-        ax.set_facecolor('#FFFFFF')
+    fig, ax = plt.subplots(figsize=(16, 16), subplot_kw=dict(polar=True))
+    ax.set_facecolor('#FFFFFF')
 
-        ax.xaxis.grid(color='#BDBDBD', linestyle='--', linewidth=1.2, alpha=1.0, zorder=1)
-        ax.yaxis.grid(color='#BDBDBD', linestyle='--', linewidth=1.2, alpha=1.0, zorder=1)
-
-
-        def close_data(data):
-            return data.tolist() + [data[0]]
+    ax.xaxis.grid(color='#BDBDBD', linestyle='--', linewidth=1.5, alpha=1.0, zorder=1)
+    ax.yaxis.grid(color='#BDBDBD', linestyle='--', linewidth=1.5, alpha=1.0, zorder=1)
 
 
-        ax.plot(angles, close_data(baseline_per), linewidth=3, linestyle='-.', label='Baseline',
-                color=COLORS['Baseline'], marker='D', markersize=8, alpha=0.9, zorder=3)
-        ax.plot(angles, close_data(noaug_per), linewidth=3, linestyle='--', label='w/o Augmentation',
-                color=COLORS['w/o Aug'], marker='^', markersize=8, alpha=0.9, zorder=4)
-        ax.plot(angles, close_data(nophys_per), linewidth=3, linestyle=':', label='w/o Physics',
-                color=COLORS['w/o Physics'], marker='s', markersize=8, alpha=0.9, zorder=5)
-        ax.plot(angles, close_data(phys_per), linewidth=4, linestyle='-', label='Full', color=COLORS['Full'],
-                marker='o', markersize=10, zorder=6)
+    def close_data(data):
+        return data.tolist() + [data[0]]
 
-        ax.set_xticks(angles[:-1])
-        ax.set_xticklabels(labels_radar, fontsize=22, fontweight='bold')
-        ax.tick_params(axis='x', pad=25)
 
-        ax.set_ylim(0, 1.15)
-        ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+    ax.plot(angles, close_data(baseline_per), linewidth=3.5, linestyle='-.', label='Baseline', color=COLORS['Baseline'],
+            marker='D', markersize=10, alpha=0.9, zorder=3)
+    ax.plot(angles, close_data(noaug_per), linewidth=3.5, linestyle='--', label='w/o Augmentation',
+            color=COLORS['w/o Aug'], marker='^', markersize=10, alpha=0.9, zorder=4)
+    ax.plot(angles, close_data(nophys_per), linewidth=3.5, linestyle=':', label='w/o Physics',
+            color=COLORS['w/o Physics'], marker='s', markersize=10, alpha=0.9, zorder=5)
+    ax.plot(angles, close_data(phys_per), linewidth=4.5, linestyle='-', label='Full', color=COLORS['Full'], marker='o',
+            markersize=12, zorder=6)
 
-        ax.set_yticklabels([])
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(labels_radar, fontsize=32, fontweight='bold')
+    ax.tick_params(axis='x', pad=25)
 
-        manual_ticks = [0.2, 0.4, 0.6, 0.8, 1.0]
-        text_angle = np.pi / 4
-        for tick_val in manual_ticks:
-            ax.text(text_angle, tick_val, f"{tick_val:.1f}", ha='left', va='center',
-                    fontsize=16, fontweight='bold', color='#333333',
-                    bbox=dict(facecolor='white', alpha=1.0, edgecolor='#BDBDBD', pad=3),
-                    zorder=10)
+    ax.set_ylim(0, 1.15)
+    ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+    ax.set_yticklabels([])
 
-            # 数据标签
-        for i, val in enumerate(phys_per):
-            angle_rad = angles[i]
-            y_pos = val - 0.1 if val > 0.9 else val + 0.06
-            ax.text(angle_rad, y_pos, f'{val:.2f}', ha='center', va='center',
-                    fontsize=18, fontweight='bold', color=COLORS['Full'],
-                    bbox=dict(facecolor='white', alpha=1.0, edgecolor=COLORS['Full'], linewidth=1.5, pad=3),
-                    zorder=10)
+    manual_ticks = [0.2, 0.4, 0.6, 0.8, 1.0]
+    text_angle = np.pi / 4
+    for tick_val in manual_ticks:
+        ax.text(text_angle, tick_val, f"{tick_val:.1f}", ha='left', va='center',
+                fontsize=28, fontweight='bold', color='#333333',
+                bbox=dict(facecolor='white', alpha=1.0, edgecolor='#BDBDBD', pad=4),
+                zorder=10)
 
-        ax.set_title('(a) Ablation Study: R² Radar Chart', fontsize=24, fontweight='bold', pad=40)
-        plt.legend(loc='upper right', bbox_to_anchor=(1.35, 1.1), fontsize=16)
-        plt.tight_layout();
-        plt.savefig(os.path.join(OUTPUT_DIR, "fig5a_ablation_radar.png"), dpi=300, bbox_inches='tight');
-        plt.close()
+    for i, val in enumerate(phys_per):
+        angle_rad = angles[i]
+        y_pos = val - 0.1 if val > 0.9 else val + 0.06
+        ax.text(angle_rad, y_pos, f'{val:.2f}', ha='center', va='center',
+                fontsize=28, fontweight='bold', color=COLORS['Full'],
+                bbox=dict(facecolor='white', alpha=1.0, edgecolor=COLORS['Full'], linewidth=1.5, pad=4),
+                zorder=10)
 
-    #图 5(b)
-    fig = plt.figure(figsize=(12, 12))
+    ax.set_title('(a) Ablation Study: R² Radar Chart', fontsize=36, fontweight='bold', pad=45)
+    plt.legend(loc='upper right', bbox_to_anchor=(1.35, 1.1), fontsize=26)
+    plt.tight_layout();
+    plt.savefig(os.path.join(OUTPUT_DIR, "fig5a_ablation_radar.png"), dpi=300, bbox_inches='tight');
+    plt.close()
+
+    fig = plt.figure(figsize=(16, 16))
     ax = fig.add_subplot(111, polar=True)
 
     labels_bar = ['Baseline', 'w/o Aug', 'w/o Physics', 'Full']
@@ -339,37 +326,37 @@ if os.path.exists(res_src):
     bars = ax.bar(theta, means, width=width, bottom=0.0, color=colors_bar, alpha=0.85, edgecolor='black', linewidth=2)
 
     ax.set_xticks(theta)
-    ax.set_xticklabels(labels_bar, fontsize=20, fontweight='bold')
+    ax.set_xticklabels(labels_bar, fontsize=32, fontweight='bold')
     ax.tick_params(axis='x', pad=25)
 
     ax.set_ylim(0, 1.0)
     ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
-    ax.set_yticklabels(["0.2", "0.4", "0.6", "0.8", "1.0"], color="#333333", size=16, fontweight='bold')
-    ax.set_rlabel_position(22.5)
-
-    ax.xaxis.grid(color='black', linestyle='--', linewidth=1.5)
-    ax.yaxis.grid(color='black', linestyle='--', linewidth=1.5)
-
-    ax.set_facecolor('#F8F9FA')
 
     for tick in ax.yaxis.get_major_ticks():
-        tick.label1.set_bbox(dict(facecolor='white', alpha=1.0, edgecolor='none', pad=3))
+        tick.label1.set_bbox(dict(facecolor='white', alpha=1.0, edgecolor='none', pad=4))
+        tick.label1.set_zorder(10)
+    ax.set_yticklabels(["0.2", "0.4", "0.6", "0.8", "1.0"], color="#333333", size=28, fontweight='bold')
+    ax.set_rlabel_position(22.5)
+
+    ax.xaxis.grid(color='black', linestyle='--', linewidth=1.8)
+    ax.yaxis.grid(color='black', linestyle='--', linewidth=1.8)
+
+    ax.set_facecolor('#F8F9FA')
 
     for angle, mean, bar in zip(theta, means, bars):
         y_pos = mean - 0.07
         ax.text(angle, y_pos, f'{mean:.4f}', ha='center', va='center',
-                fontsize=18, fontweight='bold',
-                bbox=dict(facecolor='white', alpha=1.0, edgecolor='none', pad=2))
+                fontsize=28, fontweight='bold',
+                bbox=dict(facecolor='white', alpha=1.0, edgecolor='none', pad=3))
 
-    ax.set_title('(b) Ablation Study: Average R²', fontsize=22, fontweight='bold', pad=30)
+    ax.set_title('(b) Ablation Study: Average R²', fontsize=36, fontweight='bold', pad=45)
     plt.tight_layout();
     plt.savefig(os.path.join(OUTPUT_DIR, "fig5b_ablation_avg_r2.png"), dpi=300, bbox_inches='tight');
     plt.close()
 
-#图 6
 if real_true_maps is not None:
     sample_idx = 0
-    fig, axes = plt.subplots(3, 3, figsize=(15, 14), gridspec_kw={'hspace': 0.2, 'wspace': 0.2})
+    fig, axes = plt.subplots(3, 3, figsize=(18, 18), gridspec_kw={'hspace': 0.3, 'wspace': 0.15})
     show_indices = [0, 2, 4]
 
     X_test = np.load(os.path.join(DATA_DIR, "X_test.npy"))
@@ -395,17 +382,18 @@ if real_true_maps is not None:
                 [(true_map, 'True'), (pred_map, 'P⁶Former'), (persist_map, 'Persistence')]):
             ax = axes[row, col]
             im = ax.imshow(data_map, cmap='RdYlBu_r', aspect='auto', vmin=vmin, vmax=vmax)
-            ax.set_ylabel(f'{idx_name}\n({title})', fontsize=14, fontweight='bold')
+
+            ax.set_title(f'{idx_name} - {title}', fontsize=22, fontweight='bold', pad=15)
             ax.set_xticks([]);
             ax.set_yticks([])
+
             cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-            cbar.ax.tick_params(labelsize=11)
+            cbar.ax.tick_params(labelsize=16)
 
     plt.tight_layout();
     plt.savefig(os.path.join(OUTPUT_DIR, "fig6_spatial_distribution.png"), dpi=300, bbox_inches='tight');
     plt.close()
 
-#图 7
 try:
     y_train = np.load(os.path.join(DATA_DIR, "y_train.npy")).mean(axis=(2, 3))
     y_val = np.load(os.path.join(DATA_DIR, "y_val.npy")).mean(axis=(2, 3))
@@ -423,16 +411,16 @@ try:
             patch.set_facecolor(color);
             patch.set_alpha(0.7)
 
-        ax.set_ylabel(f'{idx_name}', fontsize=14)
-        ax.tick_params(axis='x', labelsize=12)
+        ax.set_ylabel(f'{idx_name}', fontsize=20)
+        ax.tick_params(axis='y', labelsize=16)
+        ax.tick_params(axis='x', labelsize=16)
 
     plt.tight_layout();
     plt.savefig(os.path.join(OUTPUT_DIR, "fig7_distribution_shift.png"), dpi=300, bbox_inches='tight');
     plt.close()
 except Exception as e:
-    print(f"⚠️ 绘制图7失败: {e}")
+    print(f"Figure 7 failed: {e}")
 
-#图 8
 if real_true_maps is not None:
     r95p_true, r95p_pred = real_true_maps[:, 4, :, :], real_pred_maps[:, 4, :, :]
     r95p_true_avg = r95p_true.mean(axis=(1, 2))
@@ -445,7 +433,7 @@ if real_true_maps is not None:
     data_bottom = rmse_per_sample[bottom_idx]
     data_top = rmse_per_sample[top_idx]
 
-    fig, ax = plt.subplots(figsize=(6, 8))
+    fig, ax = plt.subplots(figsize=(8, 10))
     parts = ax.violinplot([data_bottom, data_top], showmeans=False, showmedians=True, showextrema=False, widths=0.6)
 
     for pc, color in zip(parts['bodies'], [COLORS['Full'], COLORS['Baseline']]):
@@ -461,13 +449,15 @@ if real_true_maps is not None:
 
     x_bottom = np.random.normal(1, 0.05, size=len(data_bottom))
     x_top = np.random.normal(2, 0.05, size=len(data_top))
-    ax.scatter(x_bottom, data_bottom, alpha=0.3, s=15, color=COLORS['Full'], edgecolor='k', linewidth=0.5)
-    ax.scatter(x_top, data_top, alpha=0.3, s=15, color=COLORS['Baseline'], edgecolor='k', linewidth=0.5)
+    ax.scatter(x_bottom, data_bottom, alpha=0.3, s=20, color=COLORS['Full'], edgecolor='k', linewidth=0.5)
+    ax.scatter(x_top, data_top, alpha=0.3, s=20, color=COLORS['Baseline'], edgecolor='k', linewidth=0.5)
 
-    ax.set_ylabel('RMSE per Sample (mm)', fontsize=15)
+    ax.set_ylabel('RMSE per Sample (mm)', fontsize=20)
+    ax.tick_params(axis='y', labelsize=16)
+    ax.tick_params(axis='x', labelsize=18)
     ax.set_ylim(0, max(data_top) * 1.1)
     plt.tight_layout();
     plt.savefig(os.path.join(OUTPUT_DIR, "fig8_r95p_stratify.png"), dpi=300, bbox_inches='tight');
     plt.close()
 
-print("\n🎉 全部图表生成完毕！输出目录: paper_assets/")
+print("\nAll figures generated! Output directory: paper_assets/")

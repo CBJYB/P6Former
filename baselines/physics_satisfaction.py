@@ -1,4 +1,3 @@
-
 import os
 import sys
 import numpy as np
@@ -6,7 +5,6 @@ import torch
 from torch.utils.data import DataLoader
 import pandas as pd
 
-# 🔧 核心修复：将项目根目录加入环境变量
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from model.config import (TIME_STEPS, VARIABLES, NUM_INDICES, D_MODEL, N_HEADS, NUM_LAYERS, D_FF, DROPOUT, SPATIAL_SIZE,
@@ -36,11 +34,11 @@ def load_model_and_params(exp_name):
     model_path = os.path.join(CHECKPOINT_BASE, exp_name, "best_model.pth")
     summary_path = os.path.join(CHECKPOINT_BASE, exp_name, "summary.npy")
     if not os.path.exists(model_path) or not os.path.exists(summary_path):
-        print(f"⚠️ 找不到模型或 summary: {exp_name}")
+        print(f"⚠️ Model or summary not found: {exp_name}")
         return None, None, None
     summary = np.load(summary_path, allow_pickle=True).item()
     if 'var_mean' not in summary:
-        print(f"⚠️ {exp_name} 的 summary 里没有 var_mean")
+        print(f"⚠️ {exp_name} summary does not contain var_mean")
         return None, None, None
 
     model = P6Former(time_steps=TIME_STEPS, in_vars=VARIABLES, num_indices=NUM_INDICES, d_model=D_MODEL,
@@ -87,4 +85,4 @@ if 'P6Former' in results and 'w/o Physics' in results:
 
     pd.DataFrame(table_data).to_csv(os.path.join(OUTPUT_DIR, "table_physics_satisfaction.csv"), index=False)
     print("=" * 70)
-    print(f"\n✅ 生成真实物理残差表: {os.path.join(OUTPUT_DIR, 'table_physics_satisfaction.csv')}")
+    print(f"\n✅ Physics residual table: {os.path.join(OUTPUT_DIR, 'table_physics_satisfaction.csv')}")

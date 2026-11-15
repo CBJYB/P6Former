@@ -30,7 +30,7 @@ class PhysicsLoss(nn.Module):
         return self.enabled is None or key in self.enabled
 
     def forward(self, pred_fields):
-        # 🔧 核心修复：将归一化输出还原为真实物理量（摄氏度、hPa、m/s 等）
+
         if self.var_mean is not None:
             pred_fields = pred_fields * self.var_std + self.var_mean
 
@@ -38,7 +38,7 @@ class PhysicsLoss(nn.Module):
         tmin = pred_fields[:, 1, :, :]
         prec = pred_fields[:, 2, :, :]
         wind = pred_fields[:, 3, :, :]
-        pres = pred_fields[:, 4, :, :] / 100.0  # 🔧 核心修复：原始数据单位是 Pa，转为 hPa
+        pres = pred_fields[:, 4, :, :] / 100.0
         srad = pred_fields[:, 5, :, :]
         lrad = pred_fields[:, 6, :, :]
         shum = pred_fields[:, 7, :, :]
@@ -47,7 +47,7 @@ class PhysicsLoss(nn.Module):
         tmin = torch.clamp(tmin, -50.0, 50.0)
         prec = torch.clamp(prec, 0.0, 500.0)
         wind = torch.clamp(wind, 0.0, 50.0)
-        pres = torch.clamp(pres, 300.0, 1100.0) # 🔧 修正范围
+        pres = torch.clamp(pres, 300.0, 1100.0)
         shum = torch.clamp(shum, 0.0, 0.1)
 
         du_dx = self._gradient_x(wind)

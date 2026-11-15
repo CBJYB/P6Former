@@ -27,12 +27,12 @@ PRED_PATH = rf"E:\CBJdata\data2\predictions_phy_convlstm_seed{SEED}.npy"
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 BATCH_SIZE = 4
-EPOCHS = 200       # 🔧
+EPOCHS = 200
 LR = 5e-4
 GRAD_CLIP = 1.0
-EARLY_STOP = 50    # 🔧
+EARLY_STOP = 50
 WARMUP_EPOCHS = 50
-PHYSICS_SCALE = 0.1 # 🔧 统一为0.1
+PHYSICS_SCALE = 0.1
 
 print(f"🔧 Device: {DEVICE}")
 
@@ -55,7 +55,7 @@ class ConvLSTMDataset(Dataset):
         y = self.y[idx].astype(np.float32)
         return torch.from_numpy(x), torch.from_numpy(y)
 
-print("📦 加载数据集...")
+print("📦 Loading dataset...")
 x_train_path = os.path.join(DATA_DIR, "X_train.npy")
 y_train_path = os.path.join(DATA_DIR, "y_train.npy")
 x_val_path = os.path.join(DATA_DIR, "X_val.npy")
@@ -133,7 +133,7 @@ class ConvLSTM(nn.Module):
 model = ConvLSTM(input_dim=8, hidden_dim=64, num_layers=2, output_dim=6).to(DEVICE)
 print(f"📊 PhyConvLSTM parameters: {sum(p.numel() for p in model.parameters())/1e6:.2f} M")
 
-# 🔧 传入逐变量参数，执行真实物理计算
+
 physics_loss_fn = PhysicsLoss(var_mean=var_mean, var_std=var_std).to(DEVICE)
 log_vars = nn.Parameter(torch.zeros(6, device=DEVICE))
 
@@ -210,7 +210,7 @@ with torch.no_grad():
 pred = np.concatenate(preds, axis=0)
 true = np.concatenate(targets, axis=0)
 
-np.save(PRED_PATH, pred) # 保存预测值
+np.save(PRED_PATH, pred)
 metrics = compute_metrics(pred, true, "PhyConvLSTM")
 np.save(RESULT_PATH, metrics)
-print(f"✅ PhyConvLSTM seed={SEED} 完成。")
+print(f"✅ PhyConvLSTM seed={SEED} completed.")

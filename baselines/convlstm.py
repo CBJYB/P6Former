@@ -22,16 +22,16 @@ print(f"🎲 SEED = {SEED}")
 DATA_DIR = r"E:\CBJdata\data2\split_7d"
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 BATCH_SIZE = 4
-EPOCHS = 200       # 🔧 改为200
+EPOCHS = 200
 HIDDEN_DIM = 64
 NUM_LAYERS = 2
 LR = 5e-4
 GRAD_CLIP = 1.0
-EARLY_STOP = 50    # 🔧 改为50
+EARLY_STOP = 50
 
 class ConvLSTMDataset(Dataset):
     def __init__(self, x_file, y_file, var_mean=None, var_std=None):
-        # 🔧 使用 mmap_mode
+        # 🔧 Use mmap_mode
         self.X = np.load(x_file, mmap_mode='r')
         self.y = np.load(y_file)
         self.var_mean = var_mean
@@ -44,7 +44,7 @@ class ConvLSTMDataset(Dataset):
         # X shape: (80, 140, 30, 8) -> (30, 8, 80, 140)
         x = np.transpose(self.X[idx], (2, 3, 0, 1)).astype(np.float32)
         if self.var_mean is not None and self.var_std is not None:
-            # 🔧 逐变量归一化
+            # 🔧 Per-variable normalization
             m = self.var_mean.reshape(1, -1, 1, 1)
             s = self.var_std.reshape(1, -1, 1, 1)
             x = (x - m) / (s + 1e-8)
@@ -189,7 +189,7 @@ with torch.no_grad():
 pred = np.concatenate(preds, axis=0)
 true = np.concatenate(targets, axis=0)
 
-#供 t 检验使用
+# For t-test use
 np.save(os.path.join(DATA_DIR, "..", f"predictions_convlstm_seed{SEED}.npy"), pred)
 metrics = compute_metrics(pred, true, "ConvLSTM")
 np.save(os.path.join(DATA_DIR, "..", f"results_convlstm_seed{SEED}.npy"), metrics)

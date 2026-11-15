@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 from evaluate_utils import compute_metrics
 
-# 配置
+# Configuration
 DATA_DIR = r"E:\CBJdata\data2\split_7d"
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 BATCH_SIZE = 16
@@ -14,12 +14,12 @@ EPOCHS = 50
 LR = 1e-3
 HIDDEN_DIM = 128
 NUM_LAYERS = 2
-OUTPUT_DIM = 6  # 6 个指数
+OUTPUT_DIM = 6  # 6 indices
 
-print(f"🔧 使用设备: {DEVICE}")
+print(f" Using device: {DEVICE}")
 
-# 加载数据
-print("📦 加载数据集...")
+# Load data
+print(" Loading dataset...")
 X_train = np.load(os.path.join(DATA_DIR, "X_train.npy"))
 y_train = np.load(os.path.join(DATA_DIR, "y_train.npy"))
 X_val = np.load(os.path.join(DATA_DIR, "X_val.npy"))
@@ -27,10 +27,10 @@ y_val = np.load(os.path.join(DATA_DIR, "y_val.npy"))
 X_test = np.load(os.path.join(DATA_DIR, "X_test.npy"))
 y_test = np.load(os.path.join(DATA_DIR, "y_test.npy"))
 
-# 特征提取：对每个时间步，计算每个变量的空间均值 -> (N, T, 8)
+# Feature extraction: for each time step, compute the spatial mean of each variable -> (N, T, 8)
 def extract_seq_features(X):
     # X: (N, 80, 140, 30, 8)
-    # 空间平均 -> (N, 30, 8)
+    # Spatial average -> (N, 30, 8)
     X_spatial_mean = X.mean(axis=(1, 2))  # (N, 30, 8)
     return X_spatial_mean
 
@@ -38,12 +38,12 @@ X_train_seq = extract_seq_features(X_train)
 X_val_seq = extract_seq_features(X_val)
 X_test_seq = extract_seq_features(X_test)
 
-# y: (N, 6, 80, 140) -> 空间平均 (N, 6)
+# y: (N, 6, 80, 140) -> spatial average (N, 6)
 y_train_avg = y_train.mean(axis=(2, 3))
 y_val_avg = y_val.mean(axis=(2, 3))
 y_test_avg = y_test.mean(axis=(2, 3))
 
-# 转 tensor
+# Convert to tensors
 X_train_t = torch.from_numpy(X_train_seq).float()
 y_train_t = torch.from_numpy(y_train_avg).float()
 X_val_t = torch.from_numpy(X_val_seq).float()
@@ -59,7 +59,7 @@ train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-# 定义 LSTM 模型
+# Define the LSTM model
 class LSTMModel(nn.Module):
     def __init__(self, input_dim=8, hidden_dim=128, num_layers=2, output_dim=6):
         super().__init__()
@@ -69,15 +69,15 @@ class LSTMModel(nn.Module):
     def forward(self, x):
         # x: (B, T, input_dim)
         out, _ = self.lstm(x)  # (B, T, hidden_dim)
-        out = out[:, -1, :]    # 取最后一个时间步
+        out = out[:, -1, :]    # Take the last time step
         return self.fc(out)
 
 model = LSTMModel(input_dim=8, hidden_dim=HIDDEN_DIM, num_layers=NUM_LAYERS, output_dim=OUTPUT_DIM).to(DEVICE)
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 
-# 训练
-print("🚀 开始训练 LSTM...")
+# Training
+print("Starting LSTM training...")
 best_val_loss = float('inf')
 for epoch in range(EPOCHS):
     model.train()
@@ -92,7 +92,7 @@ for epoch in range(EPOCHS):
         total_loss += loss.item()
     avg_train_loss = total_loss / len(train_loader)
 
-    # 验证
+    # Validation
     model.eval()
     val_loss = 0
     with torch.no_grad():
@@ -108,10 +108,10 @@ for epoch in range(EPOCHS):
         best_val_loss = avg_val_loss
         torch.save(model.state_dict(), os.path.join(DATA_DIR, "..", "best_lstm.pth"))
 
-print("✅ LSTM 训练完成")
+print("✅ LSTM training completed")
 
-# 测试
-print("🔮 测试集预测...")
+# Testing
+print(" Predicting on test set...")
 model.load_state_dict(torch.load(os.path.join(DATA_DIR, "..", "best_lstm.pth")))
 model.eval()
 preds = []
@@ -122,16 +122,16 @@ with torch.no_grad():
         preds.append(pred)
 y_pred_avg = np.concatenate(preds, axis=0)  # (N, 6)
 
-# 扩展为空间场
+# Expand to spatial fields
 N = y_test.shape[0]
 pred = np.zeros((N, 6, 80, 140), dtype=np.float32)
 for i in range(N):
     for j in range(6):
         pred[i, j, :, :] = y_pred_avg[i, j]
 
-# 评估
+# Evaluation
 metrics = compute_metrics(pred, y_test, "LSTM")
 
-# 保存结果
+# Save results
 np.save(os.path.join(DATA_DIR, "..", "results_lstm.npy"), metrics)
-print("✅ LSTM 完成")
+print("✅ LSTM completed")

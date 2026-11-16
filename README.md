@@ -30,6 +30,8 @@ pip install -r requirements.txt
 > 
 > Note: cartopy might require manual installation of its binary dependencies depending on your OS. Please refer to the official Cartopy documentation if pip fails.
 
+> **Computational Requirements**: The code has been tested on an NVIDIA RTX 5060 Ti GPU. The framework is lightweight and runs on a single consumer-grade GPU, making it easy to reproduce on ordinary desktop workstations.
+
 ## Quick Start with Dummy Data (Reproducibility Check)
 
 To ensure full reproducibility without downloading the full CMFD/ERA5 datasets, we provide a fully executable synthetic dummy dataset in the `data/dummy/` directory.
